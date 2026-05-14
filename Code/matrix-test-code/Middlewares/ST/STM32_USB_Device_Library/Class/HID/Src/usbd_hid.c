@@ -219,9 +219,11 @@ __ALIGN_BEGIN static uint8_t USBD_HID_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_
 
 __ALIGN_BEGIN static uint8_t HID_MOUSE_ReportDesc[HID_MOUSE_REPORT_DESC_SIZE] __ALIGN_END =
 {
+  /* ---- Report ID 1: Keyboard ---- */
   0x05, 0x01,        /* Usage Page (Generic Desktop)           */
   0x09, 0x06,        /* Usage (Keyboard)                       */
   0xA1, 0x01,        /* Collection (Application)               */
+  0x85, 0x01,        /*   Report ID (1)                        */
   0x05, 0x07,        /*   Usage Page (Key Codes)               */
   0x19, 0xE0,        /*   Usage Minimum (224) - modifier keys  */
   0x29, 0xE7,        /*   Usage Maximum (231)                  */
@@ -249,6 +251,20 @@ __ALIGN_BEGIN static uint8_t HID_MOUSE_ReportDesc[HID_MOUSE_REPORT_DESC_SIZE] __
   0x05, 0x07,        /*   Usage Page (Key Codes)               */
   0x19, 0x00,        /*   Usage Minimum (0)                    */
   0x29, 0x65,        /*   Usage Maximum (101)                  */
+  0x81, 0x00,        /*   Input (Data, Array, Absolute)        */
+  0xC0,              /* End Collection                         */
+
+  /* ---- Report ID 2: Consumer Control (volume, mute) ---- */
+  0x05, 0x0C,        /* Usage Page (Consumer)                  */
+  0x09, 0x01,        /* Usage (Consumer Control)               */
+  0xA1, 0x01,        /* Collection (Application)               */
+  0x85, 0x02,        /*   Report ID (2)                        */
+  0x15, 0x00,        /*   Logical Minimum (0)                  */
+  0x26, 0xFF, 0x03,  /*   Logical Maximum (1023)               */
+  0x19, 0x00,        /*   Usage Minimum (0)                    */
+  0x2A, 0xFF, 0x03,  /*   Usage Maximum (1023)                 */
+  0x75, 0x10,        /*   Report Size (16)                     */
+  0x95, 0x01,        /*   Report Count (1)                     */
   0x81, 0x00,        /*   Input (Data, Array, Absolute)        */
   0xC0               /* End Collection                         */
 };
@@ -383,7 +399,8 @@ static uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *re
           break;
 
         case USBD_HID_REQ_SET_REPORT:
-          (void)USBD_CtlPrepareRx(pdev, &hhid->led_report, 1U);
+          /* With report IDs, Linux sends [report_id, led_state] (2 bytes) */
+          (void)USBD_CtlPrepareRx(pdev, hhid->led_report, 2U);
           break;
 
         default:

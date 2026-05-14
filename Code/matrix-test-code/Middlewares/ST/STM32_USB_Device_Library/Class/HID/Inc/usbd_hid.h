@@ -43,11 +43,11 @@ extern "C" {
 #ifndef HID_EPIN_ADDR
 #define HID_EPIN_ADDR                              0x81U
 #endif /* HID_EPIN_ADDR */
-#define HID_EPIN_SIZE                              0x08U
+#define HID_EPIN_SIZE                              0x10U
 
 #define USB_HID_CONFIG_DESC_SIZ                    34U
 #define USB_HID_DESC_SIZ                           9U
-#define HID_MOUSE_REPORT_DESC_SIZE                 63U
+#define HID_MOUSE_REPORT_DESC_SIZE                 90U
 
 #define HID_DESCRIPTOR_TYPE                        0x21U
 #define HID_REPORT_DESC                            0x22U
@@ -89,7 +89,7 @@ typedef struct
   uint32_t IdleState;
   uint32_t AltSetting;
   USBD_HID_StateTypeDef state;
-  uint8_t led_report; /* LED state byte from host: bit0=NumLock, bit1=CapsLock, bit2=ScrollLock */
+  uint8_t led_report[2]; /* [0]=report ID, [1]=LED state: bit0=NumLock, bit1=CapsLock, bit2=ScrollLock */
 } USBD_HID_HandleTypeDef;
 
 /*

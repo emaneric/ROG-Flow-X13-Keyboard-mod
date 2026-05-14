@@ -34,7 +34,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define CONSUMER_VOLDOWN  0xF0U
+#define CONSUMER_VOLUP    0xF1U
+#define CONSUMER_MUTE     0xF2U
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -103,18 +105,30 @@ static const uint8_t keycode_map[NUM_ROWS][NUM_COLS] = {
     /* R5 PB2  */ { 0x00, 0xE2, 0x41, 0x28, 0xE1, 0x51, 0x2C, 0x00, 0x1D, 0x52, 0x00, 0x11, 0xE0, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00 },
     /* R6 PB8  */ { 0x00, 0xE6, 0x00, 0x34, 0xE5, 0x37, 0x00, 0x14, 0x1B, 0x38, 0x06, 0x10, 0xE4, 0x36, 0x00, 0x19, 0x00, 0x00, 0x00, 0x00 },
     /* R7 PB9  */ { 0xE3, 0x00, 0x00, 0x00, 0x00, 0x12, 0x3D, 0x2B, 0x3A, 0x45, 0x00, 0x1C, 0x00, 0x3F, 0x42, 0x17, 0x00, 0x00, 0x00, 0x00 },
-    /* R8 PB12 (vol down/ROG/mute/vol up - no standard keyboard codes) */
-                 { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+    /* R8 PB12 */{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, CONSUMER_VOLDOWN, 0x00, CONSUMER_MUTE, CONSUMER_VOLUP },
 };
 
 static uint8_t curr_state[NUM_ROWS][NUM_COLS];
 static uint8_t prev_state[NUM_ROWS][NUM_COLS];
 
+/* 0xF0-0xF2 are internal markers for consumer keys, looked up in consumer_usage[]. */
+static const uint16_t consumer_usage[] = {
+    0x00EA,  /* 0xF0: Volume Decrement */
+    0x00E9,  /* 0xF1: Volume Increment */
+    0x00E2,  /* 0xF2: Mute            */
+};
+
 typedef struct {
+    uint8_t report_id;  /* Always 1 */
     uint8_t modifiers;
     uint8_t reserved;
     uint8_t keycodes[6];
 } KeyboardReport_t;
+
+typedef struct {
+    uint8_t  report_id;  /* Always 2 */
+    uint16_t usage;      /* Consumer usage code; 0 = no key */
+} __attribute__((packed)) ConsumerReport_t;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -176,10 +190,14 @@ static void scan_matrix(void)
     }
 }
 
-/* Build and send a HID report from the current key state. */
+/* Build and send keyboard + consumer HID reports from the current key state. */
 static void send_hid_report(void)
 {
-    KeyboardReport_t report = {0};
+    KeyboardReport_t kb = {0};
+    kb.report_id = 1U;
+
+    ConsumerReport_t consumer = {0};
+    consumer.report_id = 2U;
 
     if (!has_ghost()) {
         int key_count = 0;
@@ -188,10 +206,12 @@ static void send_hid_report(void)
                 if (!curr_state[r][c]) continue;
                 uint8_t kc = keycode_map[r][c];
                 if (kc == 0x00) continue;
-                if (kc >= 0xE0U) {
-                    report.modifiers |= (uint8_t)(1u << (kc - 0xE0U));
+                if (kc >= 0xF0U) {
+                    consumer.usage = consumer_usage[kc - 0xF0U];
+                } else if (kc >= 0xE0U) {
+                    kb.modifiers |= (uint8_t)(1u << (kc - 0xE0U));
                 } else if (key_count < 6) {
-                    report.keycodes[key_count++] = kc;
+                    kb.keycodes[key_count++] = kc;
                 }
             }
         }
@@ -199,10 +219,14 @@ static void send_hid_report(void)
 
     USBD_HID_HandleTypeDef *hhid =
         (USBD_HID_HandleTypeDef *)hUsbDeviceFS.pClassDataCmsit[hUsbDeviceFS.classId];
+
     uint32_t t = HAL_GetTick();
     while (hhid && hhid->state == USBD_HID_BUSY && (HAL_GetTick() - t) < 10U) {}
+    USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)&kb, sizeof(kb));
 
-    USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)&report, sizeof(report));
+    t = HAL_GetTick();
+    while (hhid && hhid->state == USBD_HID_BUSY && (HAL_GetTick() - t) < 10U) {}
+    USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t *)&consumer, sizeof(consumer));
 }
 /* USER CODE END 0 */
 
@@ -262,7 +286,7 @@ int main(void)
         USBD_HID_HandleTypeDef *hhid =
             (USBD_HID_HandleTypeDef *)hUsbDeviceFS.pClassDataCmsit[hUsbDeviceFS.classId];
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7,
-            (hhid != NULL && (hhid->led_report & 0x02U)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+            (hhid != NULL && (hhid->led_report[1] & 0x02U)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 
     if (memcmp(curr_state, prev_state, sizeof(curr_state)) != 0) {
