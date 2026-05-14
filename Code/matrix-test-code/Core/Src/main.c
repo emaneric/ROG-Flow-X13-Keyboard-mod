@@ -257,6 +257,14 @@ int main(void)
     /* USER CODE BEGIN 3 */
     scan_matrix();
 
+    /* Drive PC7 (caps lock LED via MOSFET) from bit 1 of the host LED report */
+    {
+        USBD_HID_HandleTypeDef *hhid =
+            (USBD_HID_HandleTypeDef *)hUsbDeviceFS.pClassDataCmsit[hUsbDeviceFS.classId];
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7,
+            (hhid != NULL && (hhid->led_report & 0x02U)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    }
+
     if (memcmp(curr_state, prev_state, sizeof(curr_state)) != 0) {
         send_hid_report();
         memcpy(prev_state, curr_state, sizeof(curr_state));

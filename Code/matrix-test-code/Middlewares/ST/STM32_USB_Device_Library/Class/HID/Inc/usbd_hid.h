@@ -89,6 +89,7 @@ typedef struct
   uint32_t IdleState;
   uint32_t AltSetting;
   USBD_HID_StateTypeDef state;
+  uint8_t led_report; /* LED state byte from host: bit0=NumLock, bit1=CapsLock, bit2=ScrollLock */
 } USBD_HID_HandleTypeDef;
 
 /*

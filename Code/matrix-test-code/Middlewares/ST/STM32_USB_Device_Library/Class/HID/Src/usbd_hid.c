@@ -382,6 +382,10 @@ static uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *re
           (void)USBD_CtlSendData(pdev, (uint8_t *)&hhid->IdleState, 1U);
           break;
 
+        case USBD_HID_REQ_SET_REPORT:
+          (void)USBD_CtlPrepareRx(pdev, &hhid->led_report, 1U);
+          break;
+
         default:
           USBD_CtlError(pdev, req);
           ret = USBD_FAIL;
