@@ -133,6 +133,9 @@ typedef struct {
 
 static const uint32_t brightness_levels[4] = {0, 333, 666, 1000};
 static int brightness_idx = 2; /* start at medium brightness */
+
+static uint32_t rog_press_tick = 0;
+static bool     rog_armed      = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -168,6 +171,32 @@ static bool has_ghost(void)
         }
     }
     return false;
+}
+
+static void enter_bootloader(void)
+{
+    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
+    USBD_Stop(&hUsbDeviceFS);
+    USBD_DeInit(&hUsbDeviceFS);
+    HAL_RCC_DeInit();
+    HAL_DeInit();
+
+    SysTick->CTRL = 0U;
+    SysTick->LOAD = 0U;
+    SysTick->VAL  = 0U;
+
+    __disable_irq();
+    for (int i = 0; i < (int)(sizeof(NVIC->ICER) / sizeof(NVIC->ICER[0])); i++) {
+        NVIC->ICER[i] = 0xFFFFFFFFU;
+        NVIC->ICPR[i] = 0xFFFFFFFFU;
+    }
+
+    /* STM32G0B1 system bootloader base address */
+    const uint32_t boot_base = 0x1FFF0000U;
+    typedef void (*BootJump_t)(void);
+    BootJump_t boot_jump = (BootJump_t)(*(uint32_t *)(boot_base + 4U));
+    __set_MSP(*(uint32_t *)boot_base);
+    boot_jump();
 }
 
 /* Drive each row low in turn and read all column pins. */
@@ -298,10 +327,18 @@ int main(void)
             (hhid != NULL && (hhid->led_report[1] & 0x02U)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 
-    /* ROG key (R8 C17): cycle backlight through off -> low -> medium -> high -> off */
+    /* ROG key (R8 C17): short press cycles brightness; hold 5s enters bootloader */
     if (curr_state[8][17] && !prev_state[8][17]) {
+        rog_press_tick = HAL_GetTick();
+        rog_armed = true;
+    }
+    if (!curr_state[8][17] && prev_state[8][17] && rog_armed) {
         brightness_idx = (brightness_idx + 1) % 4;
         __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, brightness_levels[brightness_idx]);
+        rog_armed = false;
+    }
+    if (rog_armed && curr_state[8][17] && (HAL_GetTick() - rog_press_tick) >= 5000U) {
+        enter_bootloader();
     }
 
     if (memcmp(curr_state, prev_state, sizeof(curr_state)) != 0) {
