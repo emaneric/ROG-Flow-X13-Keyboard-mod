@@ -1,0 +1,82 @@
+R8C16 volume down
+R8C19 volume up
+R8C18 mic mute
+R8C17 ROG button
+R4C8 esc
+R7C8 f1
+R0C8 f2
+R3C6 f3
+R7C6 f4
+R1C13 f5
+R7C13 f6
+R0C13 f7
+R5C2 f8
+R7C14 f9
+R1C5 f10
+R3C5 f11
+R7C9 f12
+R1C2 delete
+R1C7 tilde
+R2C7 1
+R2C8 2
+R2C6 3
+R2C15 4
+R1C15 5
+R1C11 6
+R2C11 7
+R2C13 8
+R2C5 9
+R1C9 0
+R0C9 hyphen
+R1C3 equals
+R2C3 backspace
+R7C7 tab
+R6C7 q
+R3C8 w
+R0C6 e
+R3C15 r
+R7C15 t
+R7C11 y
+R3C11 u
+R3C13 I
+R7C5 o
+R2C9 p
+R3C9 [
+R3C3 ]
+R0C5 \
+R1C6 caps lock
+R4C7 a
+R1C8 s
+R4C3 d
+R4C15 f
+R0C15 g
+R0C11 h
+R4C11 j
+R4C13 k
+R4C5 l
+R4C9 ;
+R6C3 '
+R5C3 enter
+R5C4 shift
+R5C8 z
+R6C8 x
+R6C10 c
+R6C15 v
+R5C15 b
+R5C11 n
+R6C11 m
+R6C13 ,
+R6C5 .
+R6C9 /
+R6C4 shift
+R5C12 left ctrl
+R0C7 fn
+R7C0 windows key
+R5C1 left alt
+R5C6 space
+R6C1 right alt
+R6C12 right ctrl
+R3C14 left arrow
+R5C9 up arrow
+R5C5 down arrow
+R0C2 right arrow

@@ -1,0 +1,28 @@
+# KiCad
+~*.lck
+fp-info-cache
+*-backups/
+.history/
+*.kicad_prl
+
+# KiCad generated outputs (regenerate from project)
+*-gerbers/
+*-gerbers.zip
+
+# STM32 build output
+build/
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.su
+*.o
+*.d
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
